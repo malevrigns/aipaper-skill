@@ -44,6 +44,8 @@ aipaper-skill/
 ├── rubric.md                    # 评分量表：加权计分 + verdict 映射 + 示例
 ├── templates/
 │   └── review_report.md         # 审查报告输出模板
+├── scripts/
+│   └── ai_paper_check.py        # ★ 量化打分脚本（纯 stdlib，自动算 hedging/复读/inconclusive 等）
 └── README.md
 ```
 
@@ -57,6 +59,22 @@ aipaper-skill/
 
 ### 给作者自检
 投稿前跑一遍，重点看 **AI-Flavor Score** 和 **Figure Audit 的红灯项**（尤其 E1 工具水印、F1 无主框架图、B2 跨章节复读）。
+
+### 量化脚本（自动打分）
+`scripts/ai_paper_check.py`（纯 Python stdlib，无依赖）把 checklist 里的可量化信号自动算出来：
+```bash
+# 整篇一个文件
+python scripts/ai_paper_check.py paper.txt
+
+# 按章节喂入（能检测"Intro/Method 复读整句"这类跨章节信号）
+python scripts/ai_paper_check.py --sections intro.txt method.txt experiments.txt
+
+# 输出 JSON 报告
+python scripts/ai_paper_check.py paper.txt --json report.json
+```
+输出：**AI-Flavor Score (0–10) + verdict + 逐项命中证据**。
+实测：典型 AIGC 稿 ≈ 7 分（Likely AIGC），正常稿 ≈ 0 分（Likely human）。
+> 注意：这只是**量化代理指标**，用于快速筛红旗；最终判断仍要结合 checklist 的人工核查。
 
 
 
