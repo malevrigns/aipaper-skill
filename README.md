@@ -12,17 +12,72 @@
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-242321?style=flat-square)](scripts/README.md)
 [![Standard library](https://img.shields.io/badge/Scanner-stdlib_only-c74735?style=flat-square)](scripts/README.md)
 
-**[开始检查论文](#quickstart)** · **[先看修改案例](#example)** · **[查看五张图片](#gallery)**
-
-[项目缘起](#why) · [六类痛点](#problems) · [审查方法](#workflow) · [资源导航](#resources) · [English](README.en.md)
+[English](README.en.md) · [中文](README.md)
 
 </div>
 
----
+一个面向论文作者与审稿辅助的 skill：把审稿人反复指出的问题整理成可逐项核对的检查清单，定位到原文位置，落实到具体修改。仓库自带一个仅依赖标准库的本地文本扫描器。
+
+## 目录
+
+- [快速开始](#quickstart)
+- [修改示例](#example)
+- [背景：写得像论文，为什么还是讲不清研究](#why)
+- [六类反复出现的问题](#problems)
+- [审查方法与优先级](#workflow)
+- [本地文本扫描器](#scanner)
+- [图片画廊](#gallery)
+- [文档导航](#resources)
+- [贡献](#contributing)
+- [许可证](#license)
+
+<a id="quickstart"></a>
+
+## 快速开始
+
+**安装**：把仓库放入支持 `SKILL.md` 的客户端技能目录，文件夹命名为 `ai-paper-review`；也可以让当前 agent 直接读取仓库根目录的 `SKILL.md`，再提供稿件。安装入口依客户端而定。
+
+**审查整篇论文：**
+
+```text
+使用 ai-paper-review 检查这份论文。
+先看研究主线和核心主张对应的证据，再看重复、结果解释和图表。
+最多给三个优先问题，每条指出原文位置、影响和具体改法。
+```
+
+**直接修改一段内容：**
+
+```text
+按 ai-paper-review 检查这段 Results，并直接给我改好的内容。
+保留真实数值、必要限定和负面结果，不新增实验或结论。
+```
+
+<a id="example"></a>
+
+## 修改示例
+
+<table>
+<tr>
+<th align="left" width="50%">修改前 · 逐条抄录数值</th>
+<th align="left" width="50%">修改后 · 讲清收益与代价</th>
+</tr>
+<tr>
+<td valign="top">
+<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
+</td>
+<td valign="top">
+<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
+</td>
+</tr>
+</table>
+
+<sub>合成案例，两侧使用同一批数值。没有独立重复数据，因此没有补造显著性结论。</sub>
+
+一段话交代关键比较、收益、代价和范围。[查看全部六个修改案例 →](examples/before_after.md)
 
 <a id="why"></a>
 
-## 写得像论文，为什么还是讲不清研究？
+## 背景：写得像论文，为什么还是讲不清研究
 
 调研多位审稿人，并阅读了 **2026 年大量 AI 论文**后，我反复遇到同一类问题：语言很流畅，措辞很谨慎，统计分析也列得完整，但读完仍然说不清这项研究为什么值得做、发现了什么、证据又在哪里。
 
@@ -79,7 +134,7 @@
 
 <a id="workflow"></a>
 
-## 从发现问题，到改动原文
+## 审查方法与优先级
 
 <table>
 <tr>
@@ -111,52 +166,11 @@
 
 [查看完整审查示范 →](examples/demo_review.md)
 
-<a id="example"></a>
+<a id="scanner"></a>
 
-## 一次具体修改，比一句“去 AI 味”更有用
+## 本地文本扫描器
 
-<table>
-<tr>
-<th align="left" width="50%">修改前 · 逐条抄录数值</th>
-<th align="left" width="50%">修改后 · 讲清收益与代价</th>
-</tr>
-<tr>
-<td valign="top">
-<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
-</td>
-<td valign="top">
-<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
-</td>
-</tr>
-</table>
-
-<sub>合成案例，两侧使用同一批数值。没有独立重复数据，因此没有补造显著性结论。</sub>
-
-一段话交代关键比较、收益、代价和范围。[查看全部六个修改案例 →](examples/before_after.md)
-
-<a id="quickstart"></a>
-
-## 现在检查一份稿件
-
-把仓库放入支持 `SKILL.md` 的客户端技能目录，文件夹命名为 `ai-paper-review`。也可以让当前 agent 直接读取仓库根目录的 `SKILL.md`，再提供稿件。安装入口依客户端而定。
-
-**审查整篇论文：**
-
-```text
-使用 ai-paper-review 检查这份论文。
-先看研究主线和核心主张对应的证据，再看重复、结果解释和图表。
-最多给三个优先问题，每条指出原文位置、影响和具体改法。
-```
-
-**直接修改一段内容：**
-
-```text
-按 ai-paper-review 检查这段 Results，并直接给我改好的内容。
-保留真实数值、必要限定和负面结果，不新增实验或结论。
-```
-
-<details>
-<summary><strong>运行本地文本扫描器</strong> · Python 3.9+，仅标准库</summary>
+Python 3.9+，仅标准库，无网络调用。
 
 ```bash
 git clone https://github.com/malevrigns/aipaper-skill.git
@@ -172,17 +186,15 @@ python scripts/ai_paper_check.py paper.md --json report.json --markdown report.m
 python scripts/ai_paper_check.py --sections intro.txt method.txt results.txt
 ```
 
-扫描器无网络调用，支持 UTF-8 文本、Markdown 和简单 LaTeX。PDF 需先提取文本，图像与版面另行检查。
+支持 UTF-8 文本、Markdown 和简单 LaTeX。PDF 需先提取文本，图像与版面另行检查。
 
 随仓库提供的 demo 可复现四类候选：限定语成串、跨章节复读、未替换参数和同列表格精度。脚本定位文本候选，完整语义审查仍需结合稿件内容。
 
 [参数、退出码与解析范围 →](scripts/README.md)
 
-</details>
-
 <a id="gallery"></a>
 
-## 五张图片，讲清项目针对的问题
+## 图片画廊
 
 一张横版头图，四张竖版海报。点击缩略图查看原图，可用于项目介绍、社交平台图文与视频画面。
 
@@ -198,7 +210,7 @@ python scripts/ai_paper_check.py --sections intro.txt method.txt results.txt
 
 <a id="resources"></a>
 
-## 按任务找到入口
+## 文档导航
 
 | 你要做什么 | 从这里开始 |
 | :--- | :--- |
@@ -226,10 +238,22 @@ v2 将旧版的 `AI-Flavor Score` 和作者身份标签替换为编辑候选与�
 
 </details>
 
+<a id="contributing"></a>
+
+## 贡献
+
+欢迎补充问题案例与反例，请先阅读 [贡献指南](CONTRIBUTING.md)。
+
+<a id="license"></a>
+
+## 许可证
+
+[MIT License](LICENSE)
+
 ---
 
 <div align="center">
 <p><strong>为什么做这项研究？发现了什么？证据在哪里？</strong></p>
 <p>把这三个问题讲清楚，是这套 skill 的出发点。</p>
-<p><a href="CONTRIBUTING.md">贡献问题案例</a> · <a href="LICENSE">MIT License</a> · <a href="#top">回到顶部 ↑</a></p>
+<p><a href="#top">回到顶部 ↑</a></p>
 </div>

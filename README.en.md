@@ -12,17 +12,77 @@
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-242321?style=flat-square)](scripts/README.md)
 [![Standard library](https://img.shields.io/badge/Scanner-stdlib_only-c74735?style=flat-square)](scripts/README.md)
 
-**[Review a manuscript](#quickstart)** · **[See an edit](#example)** · **[Five campaign images](#gallery)**
-
-[Why this exists](#why) · [Six problems](#problems) · [Workflow](#workflow) · [Resources](#resources) · [中文](README.md)
+[中文](README.md) · [English](README.en.md)
 
 </div>
 
----
+A skill for authors and review assistants: it turns the problems reviewers raise most often into checkable items, locates them in the manuscript, and lands them as concrete revisions. Ships with a local text scanner that uses only the Python standard library.
+
+## Table of contents
+
+- [Quickstart](#quickstart)
+- [A worked edit](#example)
+- [Why this exists](#why)
+- [Six recurring problems](#problems)
+- [Workflow and priorities](#workflow)
+- [Local text scanner](#scanner)
+- [Image gallery](#gallery)
+- [Documentation map](#resources)
+- [Contributing](#contributing)
+- [License](#license)
+
+<a id="quickstart"></a>
+
+## Quickstart
+
+**Install:** place the repository in your client's skill directory as `ai-paper-review`, if it supports `SKILL.md`. Alternatively, ask your agent to read the root `SKILL.md`, then provide the manuscript. Installation entry points vary by client.
+
+**Review a full paper:**
+
+```text
+Use ai-paper-review to review this manuscript.
+Check the research question and claim–evidence links first,
+then repetition, results interpretation and figures.
+Give at most three priority issues, each with a source location,
+its impact and a concrete next edit.
+```
+
+**Revise a passage directly:**
+
+```text
+Use ai-paper-review to revise this Results passage and return the edited text.
+Preserve the real values, necessary qualifications and negative findings.
+Do not add experiments or conclusions.
+```
+
+The reference material is primarily in Chinese; the workflow applies to English or Chinese manuscripts.
+
+<a id="example"></a>
+
+## A worked edit
+
+<table>
+<tr>
+<th align="left" width="50%">Before · Listing the numbers</th>
+<th align="left" width="50%">After · Explaining the tradeoff</th>
+</tr>
+<tr>
+<td valign="top">
+<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
+</td>
+<td valign="top">
+<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
+</td>
+</tr>
+</table>
+
+<sub>Synthetic example using identical underlying numbers. No independent repetitions were supplied, so no significance claim is added.</sub>
+
+The revision states the comparison, benefit, cost and scope. [Explore all six worked examples →](examples/before_after.md)
 
 <a id="why"></a>
 
-## Fluent prose. But what does the research establish?
+## Why this exists
 
 After discussing these papers with multiple reviewers and reading a large number of AI-written and AI-assisted papers in **2026**, I kept encountering the same problem: fluent prose, cautious claims and detailed statistical reporting could still leave the research difficult to understand.
 
@@ -79,7 +139,7 @@ The weaknesses reach into **motivation, argument structure and interpretation**.
 
 <a id="workflow"></a>
 
-## From a concern to a concrete edit
+## Workflow and priorities
 
 <table>
 <tr>
@@ -111,57 +171,11 @@ Each finding includes a **source location, evidence, practical impact and a spec
 
 [Read a complete synthetic review →](examples/demo_review.md)
 
-<a id="example"></a>
+<a id="scanner"></a>
 
-## See the difference in one edit
+## Local text scanner
 
-<table>
-<tr>
-<th align="left" width="50%">Before · Listing the numbers</th>
-<th align="left" width="50%">After · Explaining the tradeoff</th>
-</tr>
-<tr>
-<td valign="top">
-<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
-</td>
-<td valign="top">
-<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
-</td>
-</tr>
-</table>
-
-<sub>Synthetic example using identical underlying numbers. No independent repetitions were supplied, so no significance claim is added.</sub>
-
-The revision states the comparison, benefit, cost and scope. [Explore all six worked examples →](examples/before_after.md)
-
-<a id="quickstart"></a>
-
-## Review a manuscript
-
-Place the repository in your client's skill directory as `ai-paper-review`, if it supports `SKILL.md`. Alternatively, ask your agent to read the root `SKILL.md`, then provide the manuscript. Installation entry points vary by client.
-
-**Review a full paper:**
-
-```text
-Use ai-paper-review to review this manuscript.
-Check the research question and claim–evidence links first,
-then repetition, results interpretation and figures.
-Give at most three priority issues, each with a source location,
-its impact and a concrete next edit.
-```
-
-**Revise a passage directly:**
-
-```text
-Use ai-paper-review to revise this Results passage and return the edited text.
-Preserve the real values, necessary qualifications and negative findings.
-Do not add experiments or conclusions.
-```
-
-The reference material is primarily in Chinese; the workflow applies to English or Chinese manuscripts.
-
-<details>
-<summary><strong>Run the local text scanner</strong> · Python 3.9+, standard library only</summary>
+Python 3.9+, standard library only, no network calls.
 
 ```bash
 git clone https://github.com/malevrigns/aipaper-skill.git
@@ -171,17 +185,15 @@ python scripts/ai_paper_check.py paper.md --json report.json --markdown report.m
 python scripts/ai_paper_check.py --sections intro.txt method.txt results.txt
 ```
 
-No network calls. Accepts UTF-8 text, Markdown and simple LaTeX. Extract PDF text separately; review figures and layout separately.
+Accepts UTF-8 text, Markdown and simple LaTeX. Extract PDF text separately; review figures and layout separately.
 
 The supplied demo reproduces four candidate types: defensive phrase clusters, repetition across sections, an unreplaced parameter and inconsistent precision within a table column. The scanner locates text candidates; semantic review requires reading the manuscript.
 
 Successful scans exit `0`; `--fail-on-findings` opts into exit `1` when candidates exist. Input errors return `2`. [Parameters, exit codes and parser scope →](scripts/README.md)
 
-</details>
-
 <a id="gallery"></a>
 
-## Five images, one editorial series
+## Image gallery
 
 One landscape banner and four portrait posters, with paper collage, manuscript annotations and vermilion accents. Click a thumbnail to open the original. The artwork and its typography are in Chinese.
 
@@ -197,7 +209,7 @@ One landscape banner and four portrait posters, with paper collage, manuscript a
 
 <a id="resources"></a>
 
-## Find the right resource
+## Documentation map
 
 | Task | Start here |
 | :--- | :--- |
@@ -219,10 +231,22 @@ The promotional illustrations communicate review topics; they do not depict real
 
 </details>
 
+<a id="contributing"></a>
+
+## Contributing
+
+Problem cases and counterexamples are welcome — please read the [contribution guide](CONTRIBUTING.md) first.
+
+<a id="license"></a>
+
+## License
+
+[MIT License](LICENSE)
+
 ---
 
 <div align="center">
 <p><strong>Why study this problem? What was learned? Where is the evidence?</strong></p>
 <p>These questions are the starting point for this skill.</p>
-<p><a href="CONTRIBUTING.md">Contribute a case</a> · <a href="LICENSE">MIT License</a> · <a href="#top">Back to top ↑</a></p>
+<p><a href="#top">Back to top ↑</a></p>
 </div>
