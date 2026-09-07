@@ -21,7 +21,6 @@ A skill for authors and review assistants: it turns the problems reviewers raise
 ## Table of contents
 
 - [Quickstart](#quickstart)
-- [A worked edit](#example)
 - [Why this exists](#why)
 - [Six recurring problems](#problems)
 - [Workflow and priorities](#workflow)
@@ -56,29 +55,6 @@ Do not add experiments or conclusions.
 ```
 
 The reference material is primarily in Chinese; the workflow applies to English or Chinese manuscripts.
-
-<a id="example"></a>
-
-## A worked edit
-
-<table>
-<tr>
-<th align="left" width="50%">Before · Listing the numbers</th>
-<th align="left" width="50%">After · Explaining the tradeoff</th>
-</tr>
-<tr>
-<td valign="top">
-<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
-</td>
-<td valign="top">
-<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
-</td>
-</tr>
-</table>
-
-<sub>Synthetic example using identical underlying numbers. No independent repetitions were supplied, so no significance claim is added.</sub>
-
-The revision states the comparison, benefit, cost and scope. [Explore all six worked examples →](examples/before_after.md)
 
 <a id="why"></a>
 
