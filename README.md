@@ -21,7 +21,6 @@
 ## 目录
 
 - [快速开始](#quickstart)
-- [修改示例](#example)
 - [背景：写得像论文，为什么还是讲不清研究](#why)
 - [六类反复出现的问题](#problems)
 - [审查方法与优先级](#workflow)
@@ -51,29 +50,6 @@
 按 ai-paper-review 检查这段 Results，并直接给我改好的内容。
 保留真实数值、必要限定和负面结果，不新增实验或结论。
 ```
-
-<a id="example"></a>
-
-## 修改示例
-
-<table>
-<tr>
-<th align="left" width="50%">修改前 · 逐条抄录数值</th>
-<th align="left" width="50%">修改后 · 讲清收益与代价</th>
-</tr>
-<tr>
-<td valign="top">
-<p>Baseline throughput was 100.000000 tasks/min. Our method achieved 112.000000 tasks/min. The runtime was 8.700000 ms. The baseline runtime was 8.200000 ms.</p>
-</td>
-<td valign="top">
-<p>In this setting, throughput increased from <strong>100 to 112 tasks/min (+12%)</strong>, while planning time rose from <strong>8.2 to 8.7 ms (+0.5 ms)</strong>.</p>
-</td>
-</tr>
-</table>
-
-<sub>合成案例，两侧使用同一批数值。没有独立重复数据，因此没有补造显著性结论。</sub>
-
-一段话交代关键比较、收益、代价和范围。[查看全部六个修改案例 →](examples/before_after.md)
 
 <a id="why"></a>
 
