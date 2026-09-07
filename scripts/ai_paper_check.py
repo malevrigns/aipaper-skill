@@ -1,284 +1,357 @@
 #!/usr/bin/env python3
-"""
-ai_paper_check.py — Quantitative "AI-flavor" scanner for research papers.
-
-Feeds a paper's plain text (optionally section-tagged) and computes the
-observable signals defined in checklists/ai_flavor.md:
-
-  * hedging density          (over-defensive / disclaimer overload)   -> B1
-  * cross-section duplication (same sentence in Intro & Method)       -> B2
-  * inconclusive ratio        (raw-log style results)                 -> C5
-  * decimal inconsistency     (messy data reporting)                  -> C1
-  * raw-stat-in-body          (CI / p-value dumped into prose)        -> C2
-  * low info-density proxy    (very long sentences, few clauses)      -> B3
-
-Then maps hits to an AI-Flavor Score (0-10) + verdict per rubric.md.
-
-Usage:
-  python ai_paper_check.py paper.txt
-  python ai_paper_check.py --sections intro.txt method.txt exp.txt
-  python ai_paper_check.py paper.txt --json out.json
-
---sections: each file = one section; label = filename stem before first digit.
-No third-party deps (stdlib only). Exit code = rounded score (0-10).
-"""
+"""Locate manuscript editing candidates. Python 3.9+, standard library only."""
+import argparse
+import json
 import re
 import sys
-import json
-import argparse
+from collections import Counter, defaultdict
+from pathlib import Path
+
+DEFENSE = re.compile(
+    r"\bit is worth noting\b|\bit should be noted\b|\bto some extent\b|"
+    r"\bin some cases\b|\bwe do not claim\b|\bunder certain conditions\b|"
+    r"\binterpreted with caution\b|需要指出的是|在某种程度上|不能排除|谨慎解释", re.I)
+INCONCLUSIVE = re.compile(
+    r"\bcannot draw\b.{0,35}\bconclusions?\b|\bresults? (?:are|remain) (?:mixed|inconclusive)\b|"
+    r"\bno statistically significant (?:difference|improvement)\b|无法得出.{0,8}结论|尚不能区分", re.I)
+STATS = re.compile(
+    r"\b(?:90|95|99)\s*%\s*(?:CI|confidence interval)\b|\bconfidence intervals?\b|"
+    r"\bp\s*(?:[=<>≤≥]|\\(?:leq|geq))\s*(?:0?\.\d+|\d+(?:\.\d+)?(?:e[-+]?\d+)?)|"
+    r"\bp[- ]values?\b|置信区间", re.I)
+PLACEHOLDER = re.compile(r"\b(?:TODO|TBD|NEEDS REAL VALUE|INSERT RESULT HERE)\b|待填数值")
+NUMBER = re.compile(r"(?<![\w.])[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?(?![\w.])")
+TOKEN = re.compile(r"[\u4e00-\u9fff]|[a-z0-9]+(?:'[a-z]+)?", re.I)
+SKIP_SECTION = re.compile(r"^(?:references|bibliography|参考文献|acknowledg(?:e)?ments?)\b", re.I)
+APPENDIX = re.compile(r"^(?:appendix|appendices|supplement(?:ary)?|附录|补充材料)\b", re.I)
+ABSTRACT = re.compile(r"^(?:abstract|摘要)\b", re.I)
+KNOWN_HEADING = re.compile(
+    r"^(?:(?:\d+(?:\.\d+)*\.?|[IVX]+\.?)\s+)?"
+    r"(Introduction|Method(?:s|ology)?|Experiments?|Results?|Discussion|Conclusion(?:s)?|"
+    r"Related Work|Limitations?|References|Bibliography|Abstract|Appendix(?:\s+\w+)?|"
+    r"Supplementary(?: Material)?|引言|方法|实验|结果|结论|参考文献|摘要|附录)$", re.I)
 
 
-
-# --- Signal detectors -------------------------------------------------------
-
-HEDGE_PATTERNS = [
-    r"\bmay\b", r"\bmight\b", r"\bcould\b", r"\bcan be argued\b",
-    r"\bto some extent\b", r"\bit is worth noting\b", r"\bit should be noted\b",
-    r"\bwe argue (that|cautiously)\b", r"\bappears? to\b", r"\bpotentially\b",
-    r"\bin some cases\b", r"\bunder certain conditions\b", r"\bto the best of our knowledge\b",
-    r"\bwe do not claim\b", r"\bthis is not to say\b", r"\bwith the caveat\b",
-    r"\bmay not necessarily\b", r"\bsuggests that\b",
-]
-
-INCONCLUSIVE_PATTERNS = [
-    r"cannot draw (any )?(a )?robust conclusion",
-    r"no (clear |statistically significant )?(improvement|gain)",
-    r"results are (inconclusive|mixed|not conclusive)",
-    r"we (are unable|fail) to (draw|establish) a (clear|robust|definitive)",
-    r"no statistically significant difference",
-    r"the results do not (support|confirm)",
-]
-
-SENT_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z(])")
+def heading(line):
+    m = re.match(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?\s*$", line)
+    if m:
+        return m.group(1).strip()
+    m = re.match(r"^\s*\\(?:sub)*section\*?(?:\[[^\]]*\])?\{([^}]+)\}", line)
+    if m:
+        return m.group(1).strip()
+    m = KNOWN_HEADING.match(line.strip())
+    return m.group(1) if m else None
 
 
-def split_sentences(text):
-    """Split into sentences; return list of normalized non-trivial sentences."""
-    raw = SENT_SPLIT.split(text.strip())
-    out = []
-    for s in raw:
-        s = " ".join(s.split())
-        if len(s.split()) >= 6:  # ignore fragments
-            out.append(s)
-    return out
+def clean_heading(title):
+    return re.sub(r"^(?:\d+(?:\.\d+)*\.?|[IVX]+\.?)\s+", "", title).strip()
 
 
-def hedge_density(text):
-    """B1: hedging phrases per paragraph."""
-    paras = [p for p in text.split("\n") if len(p.split()) >= 5]
-    n_paras = max(len(paras), 1)
-    hits = {}
-    total = 0
-    low = text.lower()
-    for pat in HEDGE_PATTERNS:
-        c = len(re.findall(pat, low))
-        if c:
-            hits[pat] = c
-            total += c
+def parse_text(text, source, include_appendix=False):
+    """Preserve source line locations; exclude recognizable non-prose regions."""
+    blocks, tables, pending, table_rows = [], [], [], []
+    section, excluded, in_appendix = "body", False, False
+    fence, environment = None, None
+    counts = Counter()
+
+    def flush():
+        if pending:
+            blocks.append({"source": source, "section": section,
+                           "line": pending[0][0], "line_end": pending[-1][0],
+                           "text": "\n".join(t for _, t in pending)})
+            pending.clear()
+
+    def flush_table():
+        if table_rows:
+            tables.append({"source": source, "section": section, "rows": list(table_rows)})
+            table_rows.clear()
+
+    for line_no, raw in enumerate(text.splitlines(), 1):
+        s = raw.strip()
+        fm = re.match(r"^\s*(" + chr(96) + r"{3,}|~{3,})", raw)
+        if fm:
+            flush()
+            flush_table()
+            marker = fm.group(1)
+            if fence is None:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence):
+                fence = None
+            counts["non_prose_lines"] += 1
+            continue
+        if fence:
+            counts["non_prose_lines"] += 1
+            continue
+        if environment:
+            counts["non_prose_lines"] += 1
+            if "\\end{" + environment + "}" in raw:
+                environment = None
+            continue
+        em = re.search(r"\\begin\{(tabular\*?|tabularx|table\*?|equation\*?|align\*?|verbatim)\}", raw)
+        if em:
+            flush()
+            flush_table()
+            environment = em.group(1)
+            if "\\end{" + environment + "}" in raw:
+                environment = None
+            counts["non_prose_lines"] += 1
+            continue
+        if s == "$$" or s == r"\[":
+            flush()
+            environment = "display_math"
+            counts["non_prose_lines"] += 1
+            continue
+        title = heading(raw)
+        if title:
+            flush()
+            flush_table()
+            section = clean_heading(title)
+            if APPENDIX.match(section):
+                in_appendix = True
+            excluded = bool(SKIP_SECTION.match(section) or
+                            (in_appendix and not include_appendix))
+            counts["headings"] += 1
+            continue
+        if excluded:
+            counts["excluded_section_lines"] += 1
+            continue
+        if not s:
+            flush()
+            flush_table()
+            continue
+        if s.startswith("%") or s.startswith("![") or s.startswith(r"\includegraphics"):
+            flush()
+            counts["non_prose_lines"] += 1
+            continue
+        if "|" in raw and (s.startswith("|") or raw.count("|") >= 2):
+            flush()
+            cells = [x.strip() for x in s.strip("|").split("|")]
+            table_rows.append((line_no, cells))
+            counts["table_lines"] += 1
+            continue
+        flush_table()
+        pending.append((line_no, raw))
+    flush()
+    flush_table()
+    return blocks, tables, dict(counts)
+
+
+def sentences(block):
+    text = block["text"]
+    # Split on sentence punctuation, but not decimal points or common abbreviations.
+    start = 0
+    for m in re.finditer(r"[。！？]|[.!?](?=\s|$)", text):
+        before = text[start:m.end()]
+        if re.search(r"\b(?:e\.g|i\.e|et al|Fig|Eq|Dr|Sec|vs)\.$", before, re.I):
+            continue
+        value = text[start:m.end()].strip()
+        offset = start + len(text[start:m.end()]) - len(text[start:m.end()].lstrip())
+        if value:
+            yield {**block, "text": " ".join(value.split()),
+                   "line": block["line"] + text[:offset].count("\n")}
+        start = m.end()
+    tail = text[start:].strip()
+    if tail:
+        offset = start + len(text[start:]) - len(text[start:].lstrip())
+        yield {**block, "text": " ".join(tail.split()),
+               "line": block["line"] + text[:offset].count("\n")}
+
+
+def shingles(tokens, k=5):
+    return {tuple(tokens[i:i+k]) for i in range(max(0, len(tokens)-k+1))}
+
+
+def location(block, quote=None):
+    return {"source": block["source"], "section": block["section"],
+            "line": block["line"], "quote": quote if quote is not None else block["text"]}
+
+
+def finding(code, title, evidence, suggestion, **extra):
+    return {"code": code, "title": title, "status": "needs_context_review",
+            "evidence": evidence, "suggestion": suggestion, **extra}
+
+
+def analyze(sections, include_appendix=False, similarity=0.8,
+            min_repeat_tokens=12, defense_threshold=3, stat_threshold=4):
+    blocks, tables, excluded = [], [], Counter()
+    for source, content in sections.items():
+        # Display math has explicit delimiters; mask it without shifting lines.
+        lines, math_mode = [], None
+        for line in content.splitlines():
+            s = line.strip()
+            if s in ("$$", r"\[", r"\]"):
+                if math_mode is None and s != r"\]":
+                    math_mode = s
+                elif (math_mode == "$$" and s == "$$") or (math_mode == r"\[" and s == r"\]"):
+                    math_mode = None
+                lines.append("")
+            elif math_mode:
+                lines.append("")
+            elif s.startswith("$$") and s.endswith("$$"):
+                lines.append("")
+            else:
+                lines.append(line)
+        b, t, c = parse_text("\n".join(lines), source, include_appendix)
+        blocks.extend(b)
+        tables.extend(t)
+        excluded.update(c)
+    findings, observations = [], Counter()
+    entries, index, duplicate_count = [], defaultdict(set), 0
+    duplicate_examples_limit = 50
+    for block in blocks:
+        text = block["text"]
+        defenses = list(DEFENSE.finditer(text))
+        stats = list(STATS.finditer(text))
+        observations["defensive_phrase_mentions"] += len(defenses)
+        observations["statistic_mentions_in_prose"] += len(stats)
+        observations["high_precision_numbers_in_prose"] += sum(
+            len(n.group().split(".")[-1]) >= 5 for n in NUMBER.finditer(text)
+            if "." in n.group() and "e" not in n.group().lower())
+        if len(defenses) >= defense_threshold:
+            findings.append(finding("B1_DEFENSE_CLUSTER", "成串限定语需要核对信息增量",
+                [location(block)], "保留具体适用条件，检查是否有重复的空泛免责。"))
+        if len(stats) >= stat_threshold:
+            findings.append(finding("C2_STATS_CLUSTER", "统计量密集段落需要核对解释",
+                [location(block)], "核对是否说明效应、比较对象与意义；关键统计量可以保留。"))
+        for m in PLACEHOLDER.finditer(text):
+            loc = location(block, m.group())
+            loc["line"] += text[:m.start()].count("\n")
+            findings.append(finding("E1_PLACEHOLDER", "可能尚未替换的内容", [loc],
+                "检查是否为真实占位符；核实后填写或删除，不猜测结果。"))
+        for sent in sentences(block):
+            observations["inconclusive_sentence_mentions"] += bool(INCONCLUSIVE.search(sent["text"]))
+            if ABSTRACT.match(sent["section"]):
+                continue
+            toks = TOKEN.findall(sent["text"].lower())
+            if len(toks) < min_repeat_tokens:
+                continue
+            sh = shingles(toks)
+            candidates = set()
+            for key in sh:
+                candidates.update(index[key])
+            for j in sorted(candidates):
+                prev, prior = entries[j]
+                sim = len(sh & prior) / len(sh | prior)
+                if sim >= similarity:
+                    duplicate_count += 1
+                    if duplicate_count <= duplicate_examples_limit:
+                        findings.append(finding("B2_REPETITION", "长句重复候选",
+                            [location(prev), location(sent)],
+                            "检查第二次是否增加定义或证据；必要重述可以保留。",
+                            similarity=round(sim, 3),
+                            cross_section=(prev["source"], prev["section"]) !=
+                                          (sent["source"], sent["section"])))
+            current = len(entries)
+            entries.append((sent, sh))
+            for key in sh:
+                index[key].add(current)
+
+    for table in tables:
+        rows = table["rows"]
+        if len(rows) < 4 or not all(re.fullmatch(r":?-{3,}:?", c) for c in rows[1][1]):
+            continue
+        headers = rows[0][1]
+        for col, header in enumerate(headers):
+            if re.search(r"\bp(?:[- ]?value)?\b|probability|epsilon", header, re.I):
+                continue
+            numeric = []
+            for line_no, cells in rows[2:]:
+                if col >= len(cells):
+                    continue
+                cell = cells[col].replace("*", "").strip()
+                first = re.match(r"^\s*([-+]?\d+(?:\.\d+)?)(?![\d.eE])(?:\s*%|\s*(?:±|\+/-).+)?\s*$", cell)
+                if first:
+                    number = first.group(1)
+                    precision = len(number.split(".")[1]) if "." in number else 0
+                    numeric.append((line_no, cell, precision))
+            if len(numeric) >= 2 and len({p for _, _, p in numeric}) > 1:
+                ev = [{"source": table["source"], "section": table["section"],
+                       "line": n, "quote": header + ": " + cell} for n, cell, _ in numeric]
+                findings.append(finding("C1_TABLE_PRECISION", "表格同列精度需要核对", ev,
+                    "先确认同一指标与单位，再统一显示精度；不要改动底层数据。"))
+        for line_no, cells in rows[2:]:
+            for cell in cells:
+                if PLACEHOLDER.search(cell):
+                    findings.append(finding("E1_PLACEHOLDER", "表格中可能尚未替换的内容",
+                        [{"source": table["source"], "section": table["section"],
+                          "line": line_no, "quote": cell}], "核实并填写真实结果。"))
     return {
-        "total_hedges": total,
-        "per_paragraph": round(total / n_paras, 2),
-        "n_paragraphs": n_paras,
-        "breakdown": hits,
-        "hit": total / n_paras > 3.0,   # rubric red line: >3/para
-    }
-
-
-def _shingles(tokens, k=6):
-    return set(tuple(tokens[i:i + k]) for i in range(max(len(tokens) - k, 0)))
-
-
-def cross_section_duplication(sections):
-    """B2: near-duplicate sentences appearing in DIFFERENT sections.
-
-    sections: dict {label: text}. Uses 6-word shingle Jaccard similarity;
-    a pair with sim >= 0.5 across different sections counts as duplication.
-    """
-    sents = {}   # label -> list of (text, shingles)
-    for lab, txt in sections.items():
-        arr = []
-        for s in split_sentences(txt):
-            toks = re.findall(r"[a-z0-9']+", s.lower())
-            if len(toks) >= 8:
-                arr.append((s, _shingles(toks)))
-        sents[lab] = arr
-
-    pairs = []
-    labels = list(sents.keys())
-    for i in range(len(labels)):
-        for j in range(i + 1, len(labels)):
-            la, lb = labels[i], labels[j]
-            for sa, sha in sents[la]:
-                for sb, shb in sents[lb]:
-                    if not sha or not shb:
-                        continue
-                    inter = len(sha & shb)
-                    union = len(sha | shb)
-                    sim = inter / union if union else 0
-                    if sim >= 0.5:
-                        pairs.append({
-                            "similarity": round(sim, 2),
-                            "section_a": la, "section_b": lb,
-                            "sentence_a": sa[:140], "sentence_b": sb[:140],
-                        })
-    pairs.sort(key=lambda p: -p["similarity"])
-    return {"pairs": pairs, "count": len(pairs), "hit": len(pairs) >= 1}
-
-
-def inconclusive_ratio(text):
-    """C5: fraction of result sentences that are inconclusive."""
-    low = text.lower()
-    n_inc = sum(len(re.findall(p, low)) for p in INCONCLUSIVE_PATTERNS)
-    # proxy denominator: count experiment-ish result statements
-    n_res = max(n_inc, len(re.findall(r"\bwe (find|observe|show|report|evaluate)\b", low)), 1)
-    ratio = round(min(n_inc / max(n_inc + (n_res - n_inc), 1), 1.0), 3) \
-        if n_inc else 0.0
-    # simpler robust metric: inconclusive mentions vs total hedged-result verbs
-    total_result_verbs = len(re.findall(
-        r"\bwe (find|observe|show|report|evaluate|cannot|are unable|fail)\b", low))
-    frac = round(n_inc / total_result_verbs, 3) if total_result_verbs else 0.0
-    return {
-        "inconclusive_mentions": n_inc,
-        "result_verb_total": total_result_verbs,
-        "fraction_inconclusive": frac,
-        "hit": bool(total_result_verbs and frac > 0.5),
-    }
-
-
-def decimal_inconsistency(text):
-    """C1: how many distinct decimal precisions appear in numbers."""
-    nums = re.findall(r"\d+\.\d+", text)
-    precisions = set(len(n.split(".")[1]) for n in nums)
-    # ignore precision 0 (integers written as x.0 handled above -> length>=1)
-    return {
-        "n_decimal_numbers": len(nums),
-        "distinct_precisions": sorted(precisions),
-        "max_precision": max(precisions) if precisions else 0,
-        "hit": (len(precisions) > 1) or (precisions and max(precisions) >= 5),
-    }
-
-
-def raw_stat_in_body(text):
-    """C2: CI / p-value raw statistics mentioned in prose (not tables)."""
-    ci = len(re.findall(r"(?:9[05]|confidence)\s*(?:%|\s)?\s*CI|confidence interval", text, re.I))
-    pval = len(re.findall(r"\bp\s*[=<]\s*0?\.\d+|\bp-value\b|\bp\s*=\s*\d", text, re.I))
-    total = ci + pval
-    return {"ci_mentions": ci, "pvalue_mentions": pval, "total": total,
-            "hit": total >= 3}
-
-
-# --- Scoring (mirrors rubric.md weights) ------------------------------------
-
-def compute_score(hedge, dup, incon, dec, rawstat):
-    """Map signal hits to AI-Flavor Score (0-10) using rubric.md weights."""
-    score = 0.0
-    detail = []
-    if hedge["hit"]:
-        w = min(2.0, 1.0 + (hedge["per_paragraph"] - 3) / 5)
-        score += w
-        detail.append(("B1 over-hedging", round(w, 2),
-                       "%s hedges/para" % hedge["per_paragraph"]))
-    if dup["hit"]:
-        score += 2.0
-        detail.append(("B2 cross-section duplication", 2.0,
-                       "%d pair(s)" % dup["count"]))
-    if incon["hit"]:
-        score += 2.0
-        detail.append(("C5 inconclusive results", 2.0,
-                       "frac=%.2f" % incon["fraction_inconclusive"]))
-    if dec["hit"]:
-        score += 1.5
-        detail.append(("C1 decimal inconsistency", 1.5,
-                       "precisions=%s" % dec["distinct_precisions"]))
-    if rawstat["hit"]:
-        score += 1.0
-        detail.append(("C2 raw-stat-in-body", 1.0,
-                       "%d mentions" % rawstat["total"]))
-    return round(min(score, 10.0), 2), detail
-
-
-def verdict(score):
-    if score <= 2:
-        return "Likely human (minor AI polish)"
-    if score <= 5:
-        return "Mixed (clear AI assistance; verify storyline & experiments)"
-    if score <= 8:
-        return "Likely AIGC (check motivation, ablation completeness, data norms)"
-    return "Very likely raw-AutoResearch (author may not have checked; desk-reject candidate)"
-
-
-def analyze(sections):
-    """sections: dict {label: text}. Returns full report dict."""
-    full_text = "\n\n".join(sections.values())
-    hedge = hedge_density(full_text)
-    dup = cross_section_duplication(sections)
-    incon = inconclusive_ratio(full_text)
-    dec = decimal_inconsistency(full_text)
-    rawstat = raw_stat_in_body(full_text)
-    score, detail = compute_score(hedge, dup, incon, dec, rawstat)
-    return {
-        "ai_flavor_score": score,
-        "verdict": verdict(score),
-        "signals": {
-            "B1_hedging": hedge,
-            "B2_cross_section_duplication": dup,
-            "C5_inconclusive_ratio": incon,
-            "C1_decimal_inconsistency": dec,
-            "C2_raw_stat_in_body": rawstat,
+        "schema_version": "2.0",
+        "tool": "ai-paper-review",
+        "summary": {"candidate_count": len(findings),
+                    "repetition_pairs_total": duplicate_count,
+                    "repetition_examples_truncated": duplicate_count > duplicate_examples_limit},
+        "findings": findings,
+        "observations": dict(sorted(observations.items())),
+        "coverage": {
+            "inputs": list(sections), "prose_blocks": len(blocks), "markdown_tables": len(tables),
+            "include_appendix": include_appendix, "skipped": dict(excluded),
+            "not_assessed": ["research motivation", "claim validity", "experimental adequacy",
+                             "figure content and page layout", "authorship", "acceptance"],
+            "parser_limits": "Heuristic text/Markdown/simple LaTeX parsing; PDF, OCR, complex macros, "
+                             "HTML tables and cross-reference semantics are not supported.",
         },
-        "score_breakdown": [{"item": a, "weight": b, "evidence": c} for a, b, c in detail],
-        "note": ("Quantitative proxy only. 'Rigor' is not a defect: honest negative "
-                 "results are fine; the red flags are over-hedging, verbatim "
-                 "cross-section repetition, and mostly-inconclusive experiments."),
+        "settings": {"similarity": similarity, "min_repeat_tokens": min_repeat_tokens,
+                     "defense_threshold": defense_threshold, "stat_threshold": stat_threshold},
+        "note": "Candidates require contextual review. Counts are not scores; no finding is not a quality pass.",
     }
 
 
-def main():
-    ap = argparse.ArgumentParser(description="AI-flavor scanner for papers")
-    ap.add_argument("text", nargs="?", help="single paper .txt file")
-    ap.add_argument("--sections", nargs="+", help="one file per section")
-    ap.add_argument("--json", help="write JSON report to this path")
-    args = ap.parse_args()
+def render_markdown(report):
+    lines = ["# Manuscript editing scan", "",
+             f"Candidates: **{report['summary']['candidate_count']}**", "", report["note"], ""]
+    for f in report["findings"]:
+        lines.extend([f"## {f['code']} · {f['title']}", "", f"- Status: {f['status']}"])
+        for e in f["evidence"]:
+            quote = e["quote"].replace("\n", " ")
+            lines.append(f"- {e['source']}:{e['line']} ({e['section']}): {quote}")
+        lines.extend(["", f["suggestion"], ""])
+    lines.extend(["## Coverage", "", "Not assessed: " + ", ".join(report["coverage"]["not_assessed"]),
+                  "", report["coverage"]["parser_limits"], ""])
+    return "\n".join(lines)
 
-    sections = {}
-    if args.sections:
-        for f in args.sections:
-            stem = re.split(r"\d|_", os.path.basename(f))[0] or f
-            with open(f, encoding="utf-8", errors="ignore") as fh:
-                sections[stem] = fh.read()
-    elif args.text:
-        with open(args.text, encoding="utf-8", errors="ignore") as fh:
-            sections["full"] = fh.read()
-    else:
-        sys.stderr.write("provide a text file or --sections\n")
-        return 2
 
-    rep = analyze(sections)
-    print("AI-Flavor Score : %.2f / 10" % rep["ai_flavor_score"])
-    print("Verdict         : %s" % rep["verdict"])
-    print("\nScore breakdown:")
-    for d in rep["score_breakdown"]:
-        print("  +%-4s %-32s (%s)" % (str(d["weight"]), d["item"], d["evidence"]))
-    s = rep["signals"]
-    print("\nSignals:")
-    print("  B1 hedging      : %s/para  [hit=%s]" % (s["B1_hedging"]["per_paragraph"], s["B1_hedging"]["hit"]))
-    print("  B2 x-section dup: %d pair(s) [hit=%s]" % (s["B2_cross_section_duplication"]["count"], s["B2_cross_section_duplication"]["hit"]))
-    if s["B2_cross_section_duplication"]["pairs"]:
-        p = s["B2_cross_section_duplication"]["pairs"][0]
-        print("      top: [%s]~[%s] sim=%.2f" % (p["section_a"], p["section_b"], p["similarity"]))
-        print('        A: "%s"' % p["sentence_a"])
-        print('        B: "%s"' % p["sentence_b"])
-    print("  C5 inconclusive : frac=%.2f     [hit=%s]" % (s["C5_inconclusive_ratio"]["fraction_inconclusive"], s["C5_inconclusive_ratio"]["hit"]))
-    print("  C1 decimals     : precisions=%s [hit=%s]" % (s["C1_decimal_inconsistency"]["distinct_precisions"], s["C1_decimal_inconsistency"]["hit"]))
-    print("  C2 raw-stat     : %d mentions   [hit=%s]" % (s["C2_raw_stat_in_body"]["total"], s["C2_raw_stat_in_body"]["hit"]))
-    print("\nNote:", rep["note"])
-    if args.json:
-        with open(args.json, "w", encoding="utf-8") as fh:
-            json.dump(rep, fh, ensure_ascii=False, indent=2)
-        print("\nJSON report ->", args.json)
-    return int(round(rep["ai_flavor_score"]))
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("text", nargs="?", help="UTF-8 .txt, .md or simple .tex file")
+    ap.add_argument("--sections", nargs="+", help="one file per section; full paths stay distinct")
+    ap.add_argument("--json", dest="json_path", help="write schema v2 JSON report")
+    ap.add_argument("--markdown", help="write readable Markdown report")
+    ap.add_argument("--include-appendix", action="store_true")
+    ap.add_argument("--fail-on-findings", action="store_true", help="exit 1 if candidates exist")
+    ap.add_argument("--similarity", type=float, default=0.8)
+    ap.add_argument("--min-repeat-tokens", type=int, default=12)
+    ap.add_argument("--defense-threshold", type=int, default=3)
+    ap.add_argument("--stat-threshold", type=int, default=4)
+    args = ap.parse_args(argv)
+    if bool(args.text) == bool(args.sections):
+        ap.error("provide exactly one of a text file or --sections")
+    if not 0 < args.similarity <= 1 or min(args.min_repeat_tokens, args.defense_threshold, args.stat_threshold) < 1:
+        ap.error("similarity must be in (0, 1]; token and count thresholds must be positive")
+    paths = [Path(p) for p in (args.sections or [args.text])]
+    if len({p.resolve() for p in paths}) != len(paths):
+        ap.error("the same input file was supplied more than once")
+    outputs = [Path(p) for p in [args.json_path, args.markdown] if p]
+    resolved_outputs = [p.resolve() for p in outputs]
+    if set(resolved_outputs) & {p.resolve() for p in paths} or len(set(resolved_outputs)) != len(outputs):
+        ap.error("report paths must be distinct from each other and from inputs")
+    try:
+        sections = {}
+        for p in paths:
+            if p.suffix.lower() not in {".txt", ".md", ".tex"}:
+                ap.error("only .txt, .md and .tex are supported; extract PDF text first")
+            sections[str(p)] = p.read_text(encoding="utf-8-sig")
+        report = analyze(sections, args.include_appendix, args.similarity,
+                         args.min_repeat_tokens, args.defense_threshold, args.stat_threshold)
+        md = render_markdown(report)
+        if args.json_path:
+            Path(args.json_path).write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        if args.markdown:
+            Path(args.markdown).write_text(md, encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        ap.error(str(exc))
+    print(md)
+    return 1 if args.fail_on_findings and report["findings"] else 0
 
 
 if __name__ == "__main__":
-    import os
     sys.exit(main())

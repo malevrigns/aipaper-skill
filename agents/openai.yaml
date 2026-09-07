@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Paper Review"
+  short_description: "用原文证据检查论文主线、实验论证与结果呈现，并给出具体修改"
+  default_prompt: "使用 $ai-paper-review 审查这份论文，优先检查研究主线和主张对应的证据，再给出有原文位置的修改建议。"

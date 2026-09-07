@@ -1,0 +1,116 @@
+{
+  "schema_version": "2.0",
+  "tool": "ai-paper-review",
+  "summary": {
+    "candidate_count": 4,
+    "repetition_pairs_total": 1,
+    "repetition_examples_truncated": false
+  },
+  "findings": [
+    {
+      "code": "B1_DEFENSE_CLUSTER",
+      "title": "成串限定语需要核对信息增量",
+      "status": "needs_context_review",
+      "evidence": [
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Introduction",
+          "line": 7,
+          "quote": "It is worth noting that the method works in some cases. We do not claim that it applies to every setting. These findings should be interpreted with caution."
+        }
+      ],
+      "suggestion": "保留具体适用条件，检查是否有重复的空泛免责。"
+    },
+    {
+      "code": "B2_REPETITION",
+      "title": "长句重复候选",
+      "status": "needs_context_review",
+      "evidence": [
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Introduction",
+          "line": 5,
+          "quote": "We use recent local traffic observations to adjust traversal costs during online planning."
+        },
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Method",
+          "line": 11,
+          "quote": "We use recent local traffic observations to adjust traversal costs during online planning."
+        }
+      ],
+      "suggestion": "检查第二次是否增加定义或证据；必要重述可以保留。",
+      "similarity": 1.0,
+      "cross_section": true
+    },
+    {
+      "code": "E1_PLACEHOLDER",
+      "title": "可能尚未替换的内容",
+      "status": "needs_context_review",
+      "evidence": [
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Method",
+          "line": 13,
+          "quote": "NEEDS REAL VALUE"
+        }
+      ],
+      "suggestion": "检查是否为真实占位符；核实后填写或删除，不猜测结果。"
+    },
+    {
+      "code": "C1_TABLE_PRECISION",
+      "title": "表格同列精度需要核对",
+      "status": "needs_context_review",
+      "evidence": [
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Results",
+          "line": 19,
+          "quote": "Throughput (tasks/min): 100.00"
+        },
+        {
+          "source": "examples/demo_paper.md",
+          "section": "Results",
+          "line": 20,
+          "quote": "Throughput (tasks/min): 112.000000"
+        }
+      ],
+      "suggestion": "先确认同一指标与单位，再统一显示精度；不要改动底层数据。"
+    }
+  ],
+  "observations": {
+    "defensive_phrase_mentions": 4,
+    "high_precision_numbers_in_prose": 0,
+    "inconclusive_sentence_mentions": 2,
+    "statistic_mentions_in_prose": 0
+  },
+  "coverage": {
+    "inputs": [
+      "examples/demo_paper.md"
+    ],
+    "prose_blocks": 5,
+    "markdown_tables": 1,
+    "include_appendix": false,
+    "skipped": {
+      "headings": 5,
+      "table_lines": 4,
+      "excluded_section_lines": 2
+    },
+    "not_assessed": [
+      "research motivation",
+      "claim validity",
+      "experimental adequacy",
+      "figure content and page layout",
+      "authorship",
+      "acceptance"
+    ],
+    "parser_limits": "Heuristic text/Markdown/simple LaTeX parsing; PDF, OCR, complex macros, HTML tables and cross-reference semantics are not supported."
+  },
+  "settings": {
+    "similarity": 0.8,
+    "min_repeat_tokens": 12,
+    "defense_threshold": 3,
+    "stat_threshold": 4
+  },
+  "note": "Candidates require contextual review. Counts are not scores; no finding is not a quality pass."
+}
