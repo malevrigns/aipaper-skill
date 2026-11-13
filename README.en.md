@@ -41,6 +41,7 @@ A pre-submission review and revision skill for authors. Find research findings b
 Use ai-paper-review to check this manuscript for defensive writing.
 Use the results to identify claims buried by preemptive rebuttals,
 repeated caveats, or vague disclaimers.
+Flag passages readers must reread to identify the subject, comparison, or reasoning.
 Give at most three priority issues, each with a source location,
 its impact and a concrete next edit.
 ```
@@ -48,9 +49,10 @@ its impact and a concrete next edit.
 **Revise a passage directly:**
 
 ```text
-Use ai-paper-review to revise this Results passage. Lead with the finding the
-evidence supports, remove repeated disclaimers, and preserve the original values,
-necessary qualifications, and negative findings. Return the revised passage.
+Use ai-paper-review to revise this Results passage. Lead with the supported finding.
+State what was done, what it was compared with, and what happened. Remove repeated
+disclaimers and preserve the values, necessary qualifications, and negative findings.
+Return the revised passage.
 ```
 
 The reference material is primarily in Chinese; the workflow applies to English or Chinese manuscripts.
@@ -137,6 +139,8 @@ Each qualification should serve a concrete purpose, such as specifying the sampl
 </table>
 
 Each finding includes a **source location, evidence, practical impact and a specific revision**.
+
+**Clarity is part of a completed revision.** On first reading, the intended reader should be able to identify the point of each paragraph and follow its comparisons, conditions, and reasoning. Introduce essential terms and qualifications where readers need them.
 
 | Priority | What to address |
 | :--- | :--- |

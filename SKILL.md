@@ -1,9 +1,9 @@
 ---
 name: ai-paper-review
-description: Find and revise defensive academic writing in AI-assisted research drafts, including stacked caveats, preemptive rebuttals, and repeated disclaimers that bury a contribution. Use for a targeted passage edit or a manuscript review covering research motivation, claim–evidence links, results, and figures. Preserve necessary limits and negative findings. 审查论文中的防御性写作，定位原文并给出改法。
+description: Find and revise defensive or hard-to-follow academic writing in AI-assisted research drafts. Use for a targeted passage edit or a manuscript review covering research motivation, claim–evidence links, results, and figures. Make the argument easy to follow while preserving necessary limits and negative findings. 审查论文中的防御性写作和拗口表达，定位原文并给出改法。
 license: MIT
 metadata:
-  version: "2.1.0"
+  version: "2.1.1"
 ---
 
 # AI Paper Review
@@ -38,13 +38,19 @@ metadata:
 
 有可提取文本时，可运行 `python scripts/ai_paper_check.py paper.md` 辅助定位重复句、成串限定语、统计数字密集段落和占位符。逐条结合上下文确认线索，有材料支持时也检查脚本未命中的段落。CLI 细节见 [脚本说明](scripts/README.md)。
 
-## 4. 校准判断
+## 4. 检查表达是否清晰
+
+- 从目标读者的角度顺读。让读者尽早知道每段要说明什么，再按逻辑给出理由、证据或操作步骤。读完相关段落，读者应能复述做了什么、观察到了什么，以及这些结果支持什么。
+- 定位必须回读的句子，指出具体障碍，例如指代不清、比较对象缺失、句子嵌套过多、抽象名词堆叠或推理跳步。把主体和动作写清，把比较对象和条件放在结果旁，按需要拆开嵌套句。术语首次出现时按读者需要解释，全文保持同一概念的叫法一致。
+- 交付改稿前，顺读改过的段落，核对读者能否在第一次阅读时找到该段的主旨，并沿着文字理解推理。保留技术含义、数值、限定和不确定性。缺少推理所需的材料时，标出断点并请作者补证。
+
+## 5. 校准判断
 
 完整审查时读 [审查校准](references/reviewer_calibration.md)，防止把谨慎语气、统计量数量、限制篇幅当作研究贡献。也不能因表达流畅而忽略证据缺口。
 
 按 [严重度量表](rubric.md) 排序：核心结论、重要解释、局部表达。没有必要凑满问题数。默认不给总分；用户明确要求时才给有覆盖说明的质量维度评分，绝不转换成 AI 生成概率。
 
-## 5. 输出可用结果
+## 6. 输出可用结果
 
 - 审查：用 [报告模板](templates/review_report.md)，先写主要发现，再列最多三个优先问题及必要补充。
 - 修改：交付实际改好的内容。有多处关联改动或证据缺口时，用 [修改计划](templates/author_revision.md) 记录改动和作者待确认项。

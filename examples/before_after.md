@@ -1,4 +1,4 @@
-# 六个修改前后案例
+# 修改前后案例
 
 全部为演示构造的片段。数字、方法和结果只在案例中成立，不来自真实投稿，不能复制进论文作为证据。
 
@@ -73,3 +73,15 @@
 **修改后**：按主要效果、关键机制、适用范围组织。说明哪些结果有区分力、哪些仍不确定；重复探索的配置和日志放附录并保留正文引用。
 
 改变：按实验功能组织，不按结果正负筛选。中心主张缺证据时明确记录，结构调整不能替代补证据。
+
+## 7. 说清比较对象和结果
+
+**修改前**
+
+> Under the condition in which the layout and fleet size were held constant, the implementation of the proposed planner was associated with the observation of a throughput increase from 100 to 112 tasks per minute relative to the baseline, alongside an increase from 8.2 to 8.7 ms in the time required for planning.
+
+**修改后**
+
+> With layout and fleet size held fixed, throughput was 112 tasks per minute with the proposed planner and 100 with the baseline. Planning time was 8.7 ms with the proposed planner and 8.2 ms with the baseline.
+
+第一句交代比较条件、对象和主要结果，第二句交代代价。保留了原来的数值和单位，结论仍限于这次比较。

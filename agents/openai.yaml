@@ -1,4 +1,4 @@
 interface:
   display_name: "AI Paper Review"
-  short_description: "修订 AI 辅助论文的防御性写作，保留证据边界"
-  default_prompt: "使用 $ai-paper-review 检查这份论文的防御性写作。找出被空泛免责或重复限定埋住的主张，结合原文证据给出改法，保留必要边界与反证。"
+  short_description: "修订论文的防御性写作和拗口表达，保留证据边界"
+  default_prompt: "使用 $ai-paper-review 检查这份论文的防御性写作和难以顺读的表达。找出被埋住的主张和需要回读的句子，结合证据给出清晰的改法，保留必要限定与反证。"
