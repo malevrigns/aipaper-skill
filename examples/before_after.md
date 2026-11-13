@@ -8,13 +8,13 @@
 
 > It is worth noting that our method may potentially be useful in some cases. We do not claim universal effectiveness. These findings should be interpreted with caution.
 
-**材料前提**：只测试了固定布局和固定机器人数量，两项条件均影响适用范围。
+**材料前提**：固定布局与车队规模下，吞吐量由每分钟 100 个任务升至 112 个。其他设置尚未测试。打乱交通观测的对照无法区分收益是否来自观测信息。
 
 **修改后**
 
-> Our evaluation covers a fixed layout and fleet size; whether the method transfers to other settings remains untested.
+> In the fixed-layout, fixed-fleet evaluation, throughput rose from 100 to 112 tasks per minute. Transfer to other settings remains untested, and the shuffled-input control leaves the source of the gain unresolved.
 
-改变：用具体边界替代三句空泛免责声明，没有把未知写成有效。
+改写先报告已观察到的收益，再交代尚未验证的适用范围与机制归因。真实限制仍然影响读者如何理解结果。
 
 ## 2. 引言与方法承担不同任务
 

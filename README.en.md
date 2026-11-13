@@ -2,11 +2,10 @@
 
 <div align="center">
 
-<img src="assets/hero-editorial.png" alt="AI paper writing goes beyond lowering an AI-detection score. Informed by reviewer discussions and extensive reading of AI papers in 2026." width="100%">
-
 <h1>AI Paper Review</h1>
-<p><strong>Turn recurring reviewer concerns into concrete manuscript revisions.</strong></p>
-<p>Research motivation · Argument structure · Results interpretation · Specific edits</p>
+<p><strong>Push back against defensive writing in AI-assisted research papers.</strong></p>
+
+<img src="assets/hero-editorial.png" alt="Review and revision of AI-assisted research manuscripts" width="100%">
 
 [![MIT License](https://img.shields.io/badge/License-MIT-242321?style=flat-square)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-242321?style=flat-square)](scripts/README.md)
@@ -16,12 +15,12 @@
 
 </div>
 
-A skill for authors and review assistants: it turns the problems reviewers raise most often into checkable items, locates them in the manuscript, and lands them as concrete revisions. Ships with a local text scanner that uses only the Python standard library.
+A pre-submission review and revision skill for authors. Find research findings buried under preemptive rebuttals, vague disclaimers, or repeated caveats. State what the evidence supports and keep the qualifications and counterevidence that affect interpretation. Includes a local text scanner that uses only the Python standard library.
 
 ## Table of contents
 
 - [Quickstart](#quickstart)
-- [Why this exists](#why)
+- [Why defensive writing gets in the way](#why)
 - [Six recurring problems](#problems)
 - [Workflow and priorities](#workflow)
 - [Local text scanner](#scanner)
@@ -39,9 +38,9 @@ A skill for authors and review assistants: it turns the problems reviewers raise
 **Review a full paper:**
 
 ```text
-Use ai-paper-review to review this manuscript.
-Check the research question and claim–evidence links first,
-then repetition, results interpretation and figures.
+Use ai-paper-review to check this manuscript for defensive writing.
+Use the results to identify claims buried by preemptive rebuttals,
+repeated caveats, or vague disclaimers.
 Give at most three priority issues, each with a source location,
 its impact and a concrete next edit.
 ```
@@ -49,22 +48,22 @@ its impact and a concrete next edit.
 **Revise a passage directly:**
 
 ```text
-Use ai-paper-review to revise this Results passage and return the edited text.
-Preserve the real values, necessary qualifications and negative findings.
-Do not add experiments or conclusions.
+Use ai-paper-review to revise this Results passage. Lead with the finding the
+evidence supports, remove repeated disclaimers, and preserve the original values,
+necessary qualifications, and negative findings. Return the revised passage.
 ```
 
 The reference material is primarily in Chinese; the workflow applies to English or Chinese manuscripts.
 
 <a id="why"></a>
 
-## Why this exists
+## Why defensive writing gets in the way
 
 After discussing these papers with multiple reviewers and reading a large number of AI-written and AI-assisted papers in **2026**, I kept encountering the same problem: fluent prose, cautious claims and detailed statistical reporting could still leave the research difficult to understand.
 
-The weaknesses reach into **motivation, argument structure and interpretation**. Replacing words or lowering a detector score cannot repair a missing argument.
+When a manuscript anticipates every possible objection, its main finding can end up buried under layers of qualification. Readers see the experiments and disclaimers and still have to work out which result changes their understanding of the problem.
 
-**This skill turns recurring concerns from that inquiry into checks tied to manuscript locations and concrete revisions.**
+Each qualification should serve a concrete purpose, such as specifying the sample, comparison, uncertainty, or unresolved alternative explanations. Establish what the evidence supports, then decide which caveats to retain, consolidate, move, or remove.
 
 <a id="problems"></a>
 
@@ -131,8 +130,8 @@ The weaknesses reach into **motivation, argument structure and interpretation**.
 </td>
 <td width="33%" valign="top">
 <h3>03 / Revise the text</h3>
-<p>Locate the relevant passage.<br>Distinguish missing evidence from unclear prose.<br>Specify the next edit.</p>
-<p><a href="templates/author_revision.md">Revision template →</a></p>
+<p>Lead with the supported finding.<br>Keep limits and counterevidence that affect interpretation.<br>Turn evidence gaps into questions the author can answer.</p>
+<p><a href="references/defensive_writing.md">Defensive writing guide (Chinese) →</a></p>
 </td>
 </tr>
 </table>
@@ -190,6 +189,7 @@ One landscape banner and four portrait posters, with paper collage, manuscript a
 | Task | Start here |
 | :--- | :--- |
 | Review or revise a manuscript with an agent | [Skill entry point](SKILL.md) · [Checklist](checklists/ai_flavor.md) |
+| Revise defensive writing | [Revision guide (Chinese)](references/defensive_writing.md) · [Worked edits](examples/before_after.md) |
 | Connect motivation, claims and evidence | [Storyline](references/storyline.md) · [Evidence table](templates/claim_evidence.md) |
 | Improve results and figures | [Results reporting](references/results_reporting.md) · [Figure checks](checklists/figure_standards.md) |
 | Write a review or revision plan | [Review template](templates/review_report.md) · [Revision template](templates/author_revision.md) |

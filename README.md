@@ -2,11 +2,10 @@
 
 <div align="center">
 
-<img src="assets/hero-editorial.png" alt="AI 论文写作，早已不只是降低 AIGC 率。调研多位审稿人，阅读 2026 年大量 AI 论文后的观察。" width="100%">
-
 <h1>AI Paper Review</h1>
-<p><strong>从审稿人的问题出发，重新审视 AI 协助完成的论文。</strong></p>
-<p>研究动机 · 论证结构 · 结果解释 · 具体修改</p>
+<p><strong>反对 AI 辅助论文中的防御性写作。</strong></p>
+
+<img src="assets/hero-editorial.png" alt="AI 辅助论文写作的审查与修改" width="100%">
 
 [![MIT License](https://img.shields.io/badge/License-MIT-242321?style=flat-square)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-242321?style=flat-square)](scripts/README.md)
@@ -16,12 +15,12 @@
 
 </div>
 
-一个面向论文作者与审稿辅助的 skill：把审稿人反复指出的问题整理成可逐项核对的检查清单，定位到原文位置，落实到具体修改。仓库自带一个仅依赖标准库的本地文本扫描器。
+一个面向论文作者的投稿前审查与修改 skill。找出被反复自辩、空泛免责和重复限定埋住的研究发现，把证据支持的主张写清楚，并在影响解读的位置保留必要的限定和反证。仓库自带一个仅依赖 Python 标准库的本地文本扫描器。
 
 ## 目录
 
 - [快速开始](#quickstart)
-- [背景：写得像论文，为什么还是讲不清研究](#why)
+- [为什么反对防御性写作](#why)
 - [六类反复出现的问题](#problems)
 - [审查方法与优先级](#workflow)
 - [本地文本扫描器](#scanner)
@@ -39,27 +38,27 @@
 **审查整篇论文：**
 
 ```text
-使用 ai-paper-review 检查这份论文。
-先看研究主线和核心主张对应的证据，再看重复、结果解释和图表。
+使用 ai-paper-review 检查这份论文的防御性写作。
+根据结果找出被预先自辩、重复限定或空泛免责埋住的主张。
 最多给三个优先问题，每条指出原文位置、影响和具体改法。
 ```
 
 **直接修改一段内容：**
 
 ```text
-按 ai-paper-review 检查这段 Results，并直接给我改好的内容。
-保留真实数值、必要限定和负面结果，不新增实验或结论。
+使用 ai-paper-review 改写这段 Results。先写证据支持的发现，删去重复免责。
+保留真实数值、必要限定和负面结果，直接给出改好的段落。
 ```
 
 <a id="why"></a>
 
-## 背景：写得像论文，为什么还是讲不清研究
+## 为什么反对防御性写作
 
 调研多位审稿人，并阅读了 **2026 年大量 AI 论文**后，我反复遇到同一类问题：语言很流畅，措辞很谨慎，统计分析也列得完整，但读完仍然说不清这项研究为什么值得做、发现了什么、证据又在哪里。
 
-这些问题已经深入到**研究动机、论证结构和结果解释**。换词、调句式、降低 AIGC 率，补不上缺失的论证。
+稿件开始替作者预先回应每一种可能的批评，最重要的发现反而藏在多层限定后面。读者看到实验过程和免责声明，却还得自己找出哪项结果改变了什么判断。
 
-**这个 skill 把调研中反复出现的问题，整理成可以逐项核对、定位到原文、落实到修改的工作方法。**
+每处限定都应承担具体作用，例如说明样本、比较条件、效应不确定性或仍未排除的解释。改写时先确定现有证据支持什么，再决定哪些限定值得保留、合并或移动，哪些免责可以删掉。
 
 <a id="problems"></a>
 
@@ -126,8 +125,8 @@
 </td>
 <td width="33%" valign="top">
 <h3>03 / 改原文</h3>
-<p>定位章节、段落和句子。<br>分清补证据与改表达。<br>给出可以执行的修改。</p>
-<p><a href="templates/author_revision.md">作者修改模板 →</a></p>
+<p>把证据支持的发现提到前面。<br>保留改变解读的边界与反证。<br>把证据缺口写成作者能回答的问题。</p>
+<p><a href="references/defensive_writing.md">防御性写作改法 →</a></p>
 </td>
 </tr>
 </table>
@@ -191,6 +190,7 @@ python scripts/ai_paper_check.py --sections intro.txt method.txt results.txt
 | 你要做什么 | 从这里开始 |
 | :--- | :--- |
 | 让 agent 审查或修改稿件 | [Skill 入口](SKILL.md) · [检查清单](checklists/ai_flavor.md) |
+| 修改防御性写作 | [判断与改法](references/defensive_writing.md) · [修改前后](examples/before_after.md) |
 | 梳理研究主线与证据 | [主线检查](references/storyline.md) · [主张与证据表](templates/claim_evidence.md) |
 | 整理结果与图表 | [结果汇报](references/results_reporting.md) · [图表检查](checklists/figure_standards.md) |
 | 输出审查意见或修改计划 | [报告模板](templates/review_report.md) · [修改模板](templates/author_revision.md) |
