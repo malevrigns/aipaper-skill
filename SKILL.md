@@ -3,7 +3,7 @@ name: ai-paper-review
 description: Find and revise defensive or hard-to-follow academic writing in AI-assisted research drafts. Use for a targeted passage edit or a manuscript review covering research motivation, claim–evidence links, results, and figures. Make the argument easy to follow while preserving necessary limits and negative findings. 审查论文中的防御性写作和拗口表达，定位原文并给出改法。
 license: MIT
 metadata:
-  version: "2.1.1"
+  version: "2.1.2"
 ---
 
 # AI Paper Review
@@ -41,7 +41,9 @@ metadata:
 ## 4. 检查表达是否清晰
 
 - 从目标读者的角度顺读。让读者尽早知道每段要说明什么，再按逻辑给出理由、证据或操作步骤。读完相关段落，读者应能复述做了什么、观察到了什么，以及这些结果支持什么。
-- 定位必须回读的句子，指出具体障碍，例如指代不清、比较对象缺失、句子嵌套过多、抽象名词堆叠或推理跳步。把主体和动作写清，把比较对象和条件放在结果旁，按需要拆开嵌套句。术语首次出现时按读者需要解释，全文保持同一概念的叫法一致。
+- 定位必须回读的句子，指出具体障碍，例如指代不清、比较对象缺失、句子嵌套过多、抽象名词堆叠或推理跳步。把主体和动作写清，把比较对象和条件放在结果旁，按需要拆开嵌套句。
+- 首次出现陌生术语、符号或缩写时，说明它指什么、起什么作用或衡量什么。正文中的内部代号优先改成有实际含义的名称。保留复现所需的代号，并给出它与配置或实验的对应关系。
+- 涉及图表的段落要写清发现或解释关键关系，并给出可核对的图、子图或表号。全文改写时，对照摘要、结果、图表和结论，核对同一术语及同一设置下的关键数字。局部改写时只核对受影响的主张和引用。
 - 交付改稿前，顺读改过的段落，核对读者能否在第一次阅读时找到该段的主旨，并沿着文字理解推理。保留技术含义、数值、限定和不确定性。缺少推理所需的材料时，标出断点并请作者补证。
 
 ## 5. 校准判断

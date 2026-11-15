@@ -85,3 +85,17 @@
 > With layout and fleet size held fixed, throughput was 112 tasks per minute with the proposed planner and 100 with the baseline. Planning time was 8.7 ms with the proposed planner and 8.2 ms with the baseline.
 
 第一句交代比较条件、对象和主要结果，第二句交代代价。保留了原来的数值和单位，结论仍限于这次比较。
+
+## 8. 把实验代号和图表数字解释给读者
+
+**修改前**
+
+> 如表 2 所示，在 100 RPS 时，B2 相较于 B0 实现了更优的 P95 表现（41 ms 对 52 ms）。在更高负载下的表现仍有待验证。
+
+**材料前提**：B2 把连续到达的请求合成一批处理，B0 逐条处理。P95 是请求延迟的第 95 百分位。只测试了每秒 100 个请求这一负载。
+
+**修改后**
+
+> 在每秒 100 个请求的测试中，批量处理时，请求延迟的第 95 百分位为 41 毫秒，逐条处理时为 52 毫秒（表 2）。更高负载尚未测试。
+
+正文用两种处理方式说明比较，并把表号放在结果旁。如果表 2 使用 B2 和 B0，图表说明应给出两种代号与处理方式的对应关系。
